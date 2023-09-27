@@ -5,7 +5,7 @@ import * as L from 'leaflet';
 
 
 const customIcon = L.icon({
-  iconUrl :'assets/church.png',
+  iconUrl: 'assets/church.png',
   iconSize: [20, 30],
   iconAnchor: [12, 41],
   popupAnchor: [1, -34],
@@ -18,7 +18,7 @@ const customIcon = L.icon({
   templateUrl: './main-page.component.html',
   styleUrls: ['./main-page.component.css']
 })
-export class MainPageComponent implements AfterViewInit,OnInit {
+export class MainPageComponent implements AfterViewInit, OnInit {
   churches: Church[] = [];
   private map: any;
 
@@ -46,11 +46,21 @@ export class MainPageComponent implements AfterViewInit,OnInit {
   }
 
   ngOnInit(): void {
+
     this.churchService.getAllChurches().subscribe(data => {
       this.churches = data;
       this.churches.forEach((church) => {
-        L.marker([church.latitude,church.longitude], { icon: customIcon }).addTo(this.map).bindPopup(church.name);
+        const marker = L.marker([church.latitude, church.longitude], {icon: customIcon}).addTo(this.map);
+        marker.bindPopup(`
+        <strong>${church.name}</strong><br>
+        <a href="https://www.google.com/maps/dir/?api=1&destination=${church.latitude},${church.longitude}" target="_blank">
+          Nawiguj do tego miejsca
+        </a>
+      `, {closeOnClick: false, autoClose: false});
+        marker.openPopup();
       });
+
+
     });
   }
 
