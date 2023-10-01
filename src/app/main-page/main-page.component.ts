@@ -3,6 +3,7 @@ import {ChurchService} from "../_services/church.service";
 import {Church} from "../_model/church";
 import * as L from 'leaflet';
 import * as GeoSearch from 'leaflet-geosearch';
+import {LeafletMouseEvent} from "leaflet";
 
 
 const churchIcon = L.icon({
@@ -28,6 +29,8 @@ const provider = new GeoSearch.OpenStreetMapProvider({
     countrycodes: "pl"
   }
 });
+
+let userMarker = L.marker([0, 0],{icon: pinIcon});
 
 @Component({
   selector: 'app-main-page',
@@ -64,6 +67,11 @@ export class MainPageComponent implements AfterViewInit, OnInit {
       marker: {icon: pinIcon,}
     });
     this.map.addControl(searchControl);
+
+    this.map.on('contextmenu', (e: LeafletMouseEvent) => {
+      const latlng = e.latlng;
+      userMarker.setLatLng(latlng).addTo(this.map);
+    });
 
   }
 
