@@ -2,8 +2,8 @@ import {AfterViewInit, Component, OnInit} from '@angular/core';
 import {ChurchService} from "../_services/church.service";
 import {Church} from "../_model/church";
 import * as L from 'leaflet';
+import {LeafletMouseEvent} from 'leaflet';
 import * as GeoSearch from 'leaflet-geosearch';
-import {LeafletMouseEvent} from "leaflet";
 
 
 const churchIcon = L.icon({
@@ -30,7 +30,7 @@ const provider = new GeoSearch.OpenStreetMapProvider({
   }
 });
 
-let userLocationMarker = L.marker([0, 0],{icon: pinIcon});
+let userLocationMarker = L.marker([0, 0], {icon: pinIcon});
 
 @Component({
   selector: 'app-main-page',
@@ -57,7 +57,8 @@ export class MainPageComponent implements AfterViewInit, OnInit {
     });
     tiles.addTo(this.map);
   }
-  private addSearchBarToMap(){
+
+  private addSearchBarToMap() {
     const searchControl = GeoSearch.GeoSearchControl({
       notFoundMessage: 'Sorry, that address could not be found.',
       style: 'bar',
@@ -66,32 +67,53 @@ export class MainPageComponent implements AfterViewInit, OnInit {
       marker: {icon: pinIcon,}
     });
     this.map.addControl(searchControl);
+
+    this.map.on('geosearch/showlocation', () => {
+      this.map.eachLayer((item: any) => {
+        if (item instanceof L.Marker) {
+          item.remove();
+          userLocationMarker.setLatLng(item.getLatLng()).addTo(this.map);
+          this.addChurchesMarkersToMap();
+        }
+      });
+    });
+
   }
-  private setUserLocationMarkerAfterRightMouseClickOnMap(){
+
+  private setUserLocationMarkerAfterRightMouseClickOnMap() {
     this.map.on('contextmenu', (e: LeafletMouseEvent) => {
       const latlng = e.latlng;
       userLocationMarker.setLatLng(latlng).addTo(this.map);
       this.map.setView(latlng, 16);
     });
   }
-  ngAfterViewInit(): void {
-    this.initMap();
-    this.addSearchBarToMap();
-    this.setUserLocationMarkerAfterRightMouseClickOnMap();
-  }
-  ngOnInit(): void {
+
+  private getAllChurchesFromService(){
     this.churchService.getAllChurches().subscribe(data => {
       this.churches = data;
-      this.churches.forEach((church) => {
-        const marker = L.marker([church.latitude, church.longitude], {icon: churchIcon}).addTo(this.map);
-        marker.bindPopup(`
+      this.addChurchesMarkersToMap();
+    });
+  }
+
+  private addChurchesMarkersToMap(){
+    this.churches.forEach((church) => {
+      const marker = L.marker([church.latitude, church.longitude], {icon: churchIcon}).addTo(this.map);
+      marker.bindPopup(`
         <strong>${church.name}</strong><br>
         <a href="https://www.google.com/maps/dir/?api=1&destination=${church.latitude},${church.longitude}" target="_blank">
           Nawiguj do tego miejsca
         </a>
       `, {closeOnClick: false, autoClose: false});
-      });
     });
   }
 
+  ngAfterViewInit(): void {
+    this.initMap();
+    this.addSearchBarToMap();
+    this.setUserLocationMarkerAfterRightMouseClickOnMap();
+  }
+
+  ngOnInit(): void {
+    this.getAllChurchesFromService();
+  }
 }
