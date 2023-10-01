@@ -2,15 +2,31 @@ import {AfterViewInit, Component, OnInit} from '@angular/core';
 import {ChurchService} from "../_services/church.service";
 import {Church} from "../_model/church";
 import * as L from 'leaflet';
+import * as GeoSearch from 'leaflet-geosearch';
 
 
-const customIcon = L.icon({
+const churchIcon = L.icon({
   iconUrl: 'assets/church.png',
   iconSize: [20, 30],
   iconAnchor: [12, 41],
   popupAnchor: [1, -34],
   tooltipAnchor: [16, -28],
   shadowSize: [41, 41]
+});
+
+const pinIcon = L.icon({
+  iconUrl: 'assets/pin.png',
+  iconSize: [45, 50],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  tooltipAnchor: [16, -28],
+  shadowSize: [41, 41]
+});
+
+const provider = new GeoSearch.OpenStreetMapProvider({
+  params: {
+    countrycodes: "pl"
+  }
 });
 
 @Component({
@@ -21,6 +37,7 @@ const customIcon = L.icon({
 export class MainPageComponent implements AfterViewInit, OnInit {
   churches: Church[] = [];
   private map: any;
+
 
   constructor(private churchService: ChurchService) {
   }
@@ -39,6 +56,15 @@ export class MainPageComponent implements AfterViewInit, OnInit {
 
     tiles.addTo(this.map);
 
+    const searchControl = GeoSearch.GeoSearchControl({
+      notFoundMessage: 'Sorry, that address could not be found.',
+      style: 'bar',
+      provider: provider,
+      showMarker: true,
+      marker: {icon: pinIcon,}
+    });
+    this.map.addControl(searchControl);
+
   }
 
   ngAfterViewInit(): void {
@@ -50,14 +76,14 @@ export class MainPageComponent implements AfterViewInit, OnInit {
     this.churchService.getAllChurches().subscribe(data => {
       this.churches = data;
       this.churches.forEach((church) => {
-        const marker = L.marker([church.latitude, church.longitude], {icon: customIcon}).addTo(this.map);
+        const marker = L.marker([church.latitude, church.longitude], {icon: churchIcon}).addTo(this.map);
         marker.bindPopup(`
         <strong>${church.name}</strong><br>
         <a href="https://www.google.com/maps/dir/?api=1&destination=${church.latitude},${church.longitude}" target="_blank">
           Nawiguj do tego miejsca
         </a>
       `, {closeOnClick: false, autoClose: false});
-        marker.openPopup();
+
       });
 
 
