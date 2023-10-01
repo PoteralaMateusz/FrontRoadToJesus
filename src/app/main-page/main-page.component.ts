@@ -41,8 +41,17 @@ export class MainPageComponent implements AfterViewInit, OnInit {
   churches: Church[] = [];
   private map: any;
 
-
   constructor(private churchService: ChurchService) {
+  }
+
+  ngAfterViewInit(): void {
+    this.initMap();
+    this.addSearchBarToMap();
+    this.setUserLocationMarkerAfterRightMouseClickOnMap();
+  }
+
+  ngOnInit(): void {
+    this.getAllChurchesFromService();
   }
 
   private initMap(): void {
@@ -107,13 +116,4 @@ export class MainPageComponent implements AfterViewInit, OnInit {
     });
   }
 
-  ngAfterViewInit(): void {
-    this.initMap();
-    this.addSearchBarToMap();
-    this.setUserLocationMarkerAfterRightMouseClickOnMap();
-  }
-
-  ngOnInit(): void {
-    this.getAllChurchesFromService();
-  }
 }
