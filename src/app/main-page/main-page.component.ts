@@ -30,7 +30,7 @@ const provider = new GeoSearch.OpenStreetMapProvider({
   }
 });
 
-let userMarker = L.marker([0, 0],{icon: pinIcon});
+let userLocationMarker = L.marker([0, 0],{icon: pinIcon});
 
 @Component({
   selector: 'app-main-page',
@@ -50,15 +50,14 @@ export class MainPageComponent implements AfterViewInit, OnInit {
       center: [53.23644681895198, 20.177615235605057],
       zoom: 6
     });
-
     const tiles = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 18,
       minZoom: 3,
       attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
     });
-
     tiles.addTo(this.map);
-
+  }
+  private addSearchBarToMap(){
     const searchControl = GeoSearch.GeoSearchControl({
       notFoundMessage: 'Sorry, that address could not be found.',
       style: 'bar',
@@ -67,20 +66,20 @@ export class MainPageComponent implements AfterViewInit, OnInit {
       marker: {icon: pinIcon,}
     });
     this.map.addControl(searchControl);
-
+  }
+  private setUserLocationMarkerAfterRightMouseClickOnMap(){
     this.map.on('contextmenu', (e: LeafletMouseEvent) => {
       const latlng = e.latlng;
-      userMarker.setLatLng(latlng).addTo(this.map);
+      userLocationMarker.setLatLng(latlng).addTo(this.map);
+      this.map.setView(latlng, 16);
     });
-
   }
-
   ngAfterViewInit(): void {
     this.initMap();
+    this.addSearchBarToMap();
+    this.setUserLocationMarkerAfterRightMouseClickOnMap();
   }
-
   ngOnInit(): void {
-
     this.churchService.getAllChurches().subscribe(data => {
       this.churches = data;
       this.churches.forEach((church) => {
@@ -91,12 +90,8 @@ export class MainPageComponent implements AfterViewInit, OnInit {
           Nawiguj do tego miejsca
         </a>
       `, {closeOnClick: false, autoClose: false});
-
       });
-
-
     });
   }
-
 
 }
