@@ -1,6 +1,6 @@
 import {Church} from "./church";
 
 export interface Road {
-  destinationChurch: Church,
+  destinationChurchID: number,
   distance: number
 }

@@ -1,5 +1,5 @@
 import {Injectable} from '@angular/core';
-import {HttpClient,HttpHeaders} from "@angular/common/http";
+import {HttpClient} from "@angular/common/http";
 import {Observable} from "rxjs";
 import {Church} from "../_model/church";
 
@@ -13,7 +13,11 @@ export class ChurchService {
   constructor(private httpClient: HttpClient) {
   }
 
-  getAllChurches():Observable<Church[]>{
+  getAllChurches(): Observable<Church[]> {
     return this.httpClient.get<Church[]>(`${CHURCH_API}/all`);
+  }
+
+  getChurchByID(id: number): Observable<Church> {
+    return this.httpClient.get<Church>(`${CHURCH_API}/${id}`);
   }
 }
