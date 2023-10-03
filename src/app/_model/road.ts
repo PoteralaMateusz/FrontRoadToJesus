@@ -1,4 +1,6 @@
+import {Church} from "./church";
+
 export interface Road {
-  destinationChurchId: number,
+  destinationChurch: Church,
   distance: number
 }
