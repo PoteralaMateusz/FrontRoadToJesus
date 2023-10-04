@@ -4,6 +4,8 @@ import {Church} from "../_model/church";
 import * as L from 'leaflet';
 import {LeafletMouseEvent} from 'leaflet';
 import * as GeoSearch from 'leaflet-geosearch';
+import {RoadService} from "../_services/road.service";
+import {Road} from "../_model/road";
 
 
 const churchIcon = L.icon({
@@ -30,7 +32,10 @@ const provider = new GeoSearch.OpenStreetMapProvider({
   }
 });
 
-let userLocationMarker = L.marker([0, 0], {icon: pinIcon});
+const userLocationMarker = L.marker([0, 0], {icon: pinIcon});
+
+const churchMarkersLayer = L.layerGroup();
+const roadMarkersLayer = L.layerGroup();
 
 @Component({
   selector: 'app-main-page',
@@ -39,15 +44,16 @@ let userLocationMarker = L.marker([0, 0], {icon: pinIcon});
 })
 export class MainPageComponent implements AfterViewInit, OnInit {
   churches: Church[] = [];
+  roads: Road[] = [];
   private map: any;
 
-  constructor(private churchService: ChurchService) {
+  constructor(private churchService: ChurchService, private roadService: RoadService) {
   }
 
   ngAfterViewInit(): void {
     this.initMap();
     this.addSearchBarToMap();
-    this.setUserLocationMarkerAfterRightMouseClickOnMap();
+    this.setUserLocationMarkerAndAddRoadsBetweenThisPointToChurchAfterRightMouseClickOnMap();
   }
 
   ngOnInit(): void {
@@ -65,6 +71,8 @@ export class MainPageComponent implements AfterViewInit, OnInit {
       attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
     });
     tiles.addTo(this.map);
+    churchMarkersLayer.addTo(this.map);
+    roadMarkersLayer.addTo(this.map);
   }
 
   private addSearchBarToMap() {
@@ -76,37 +84,68 @@ export class MainPageComponent implements AfterViewInit, OnInit {
       marker: {icon: pinIcon,}
     });
     this.map.addControl(searchControl);
+    this.clearMarkersSetUserLocationMarkerAddRoadsBetweenThisPointToChurchesAfterEnterAddressInSearchBar();
+  }
 
+  private clearMarkersSetUserLocationMarkerAddRoadsBetweenThisPointToChurchesAfterEnterAddressInSearchBar(){
     this.map.on('geosearch/showlocation', () => {
+      churchMarkersLayer.clearLayers();
+      roadMarkersLayer.clearLayers();
+      this.map.removeLayer(userLocationMarker);
       this.map.eachLayer((item: any) => {
         if (item instanceof L.Marker) {
-          item.remove();
           userLocationMarker.setLatLng(item.getLatLng()).addTo(this.map);
-          this.addChurchesMarkersToMap();
+          this.getRoadsBetweenPointToChurches(userLocationMarker.getLatLng().lng, userLocationMarker.getLatLng().lat);
+          this.map.removeLayer(item);
         }
       });
+      this.map.setView(userLocationMarker.getLatLng(),12);
     });
-
   }
 
-  private setUserLocationMarkerAfterRightMouseClickOnMap() {
+  private setUserLocationMarkerAndAddRoadsBetweenThisPointToChurchAfterRightMouseClickOnMap() {
     this.map.on('contextmenu', (e: LeafletMouseEvent) => {
       const latlng = e.latlng;
+      churchMarkersLayer.clearLayers();
       userLocationMarker.setLatLng(latlng).addTo(this.map);
-      this.map.setView(latlng, 16);
+      this.map.setView(latlng, 12);
+      this.getRoadsBetweenPointToChurches(userLocationMarker.getLatLng().lng,userLocationMarker.getLatLng().lat);
     });
   }
 
-  private getAllChurchesFromService(){
+  private getAllChurchesFromService() {
     this.churchService.getAllChurches().subscribe(data => {
       this.churches = data;
       this.addChurchesMarkersToMap();
     });
   }
 
-  private addChurchesMarkersToMap(){
+  private getRoadsBetweenPointToChurches(longitude: number, latitude: number) {
+    this.roadService.getRoadsBetweenPointToChurches(longitude, latitude).subscribe(data => {
+      this.roads = data;
+      this.addRoadsMarkersToMap();
+    })
+  }
+
+  private addRoadsMarkersToMap() {
+    roadMarkersLayer.clearLayers();
+    this.roads.forEach((road) => {
+      this.churchService.getChurchByID(road.destinationChurchID).subscribe(church => {
+        const marker = L.marker([church.latitude, church.longitude], {icon: churchIcon}).addTo(roadMarkersLayer);
+        marker.bindPopup(`
+        <strong>${church.name}</strong><br>
+        <a href="https://www.google.com/maps/dir/?api=1&destination=${church.latitude},${church.longitude}" target="_blank">
+          Nawiguj do tego miejsca
+        </a>
+        <strong>Distance ${road.distance}</strong>
+      `, {closeOnClick: false, autoClose: false}).openPopup();
+      });
+    });
+  }
+
+  private addChurchesMarkersToMap() {
     this.churches.forEach((church) => {
-      const marker = L.marker([church.latitude, church.longitude], {icon: churchIcon}).addTo(this.map);
+      const marker = L.marker([church.latitude, church.longitude], {icon: churchIcon}).addTo(churchMarkersLayer);
       marker.bindPopup(`
         <strong>${church.name}</strong><br>
         <a href="https://www.google.com/maps/dir/?api=1&destination=${church.latitude},${church.longitude}" target="_blank">
